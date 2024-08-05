@@ -655,6 +655,7 @@ def get_repodata(channel, platform, proxies=None, ssl_verify=None):
     resp = requests.get(url, proxies=proxies, verify=ssl_verify).json()
     info = resp.get("info", {})
     packages = resp.get("packages", {})
+    packages.update(resp.get("packages.conda", {}))
     # Patch the repodata.json so that all package info dicts contain a "subdir"
     # key.  Apparently some channels on anaconda.org do not contain the
     # 'subdir' field. I think this this might be relegated to the
@@ -805,6 +806,7 @@ def _list_conda_packages(local_dir):
     if os.path.isdir(local_dir):
         contents = os.listdir(local_dir)
         results.extend(fnmatch.filter(contents, "*.tar.bz2"))
+        results.extend(fnmatch.filter(contents, "*.conda"))
     return results
 
 
@@ -1312,6 +1314,11 @@ def main(
             if name in packages_we_have
         }
         _write_repodata(download_dir, repodata)
+
+        # TODO - put .conda packages in "packages.conda" instead of "packages"?
+        #  This appears to be the new format, but putting .conda packages under
+        #  "packages" appears to work. At what version of conda does it start
+        #  looking for packages.conda?
 
         # move new conda packages
         for f in _list_conda_packages(download_dir):
